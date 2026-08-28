@@ -389,15 +389,12 @@ const menuSystem = {
             if (['a', 'A', 'Enter', ' '].includes(key)) {
                 soundFX.select();
                 if (this.selectedOption === 0) {
-                    // TIME
                     this.view = 'party';
                 } else if (this.selectedOption === 1) {
-                    // SALVAR
                     saveGame();
                     soundFX.save();
                     this.message = "Jogo Salvo!";
                 } else if (this.selectedOption === 2) {
-                    // SAIR
                     this.close();
                 }
             }
@@ -417,7 +414,6 @@ const menuSystem = {
         if (!this.active) return;
 
         if (this.view === 'main') {
-            // Caixa de Menu no Canto Direiro Superior
             const boxX = 90;
             const boxY = 8;
             const boxW = 62;
@@ -440,7 +436,6 @@ const menuSystem = {
             const arrowY = boxY + 12 + (this.selectedOption * 16);
             ctx.fillText(">", boxX + 6, arrowY);
 
-            // Mensagem de Feedback de Salvamento
             if (this.message) {
                 ctx.fillStyle = COLOR.LIGHTEST;
                 ctx.fillRect(8, 110, 144, 26);
@@ -450,7 +445,6 @@ const menuSystem = {
                 ctx.fillText(this.message, 16, 118);
             }
         } else if (this.view === 'party') {
-            // Tela Cheia de Visualização da Equipe
             ctx.fillStyle = COLOR.LIGHTEST;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -464,7 +458,6 @@ const menuSystem = {
                 ctx.fillText(`${idx + 1}.${mon.name}`, 8, startY);
                 ctx.fillText(`L${mon.level}`, 75, startY);
 
-                // Barra de HP
                 ctx.strokeRect(95, startY, 35, 4);
                 ctx.fillRect(95, startY, (mon.hp / mon.maxHp) * 35, 4);
                 ctx.fillText(`${mon.hp}/${mon.maxHp}`, 133, startY);
@@ -509,7 +502,7 @@ function loadGame() {
     }
 }
 
-// Batalha
+// Sistema de Batalha (CORRIGIDO)
 const battleSystem = {
     active: false,
     state: 'intro',
@@ -540,11 +533,14 @@ const battleSystem = {
     handleInput(key) {
         if (this.state === 'intro_flash' || this.pokeballAnim.active) return;
 
-        if (this.state === 'message') {
-            if (['a', 'A', 'Enter', ' '].includes(key)) {
+        // Avança caixas de texto nas mensagens de vitória, captura ou ataque
+        if (this.state === 'message' || this.state === 'caught') {
+            if (['a', 'A', 'Enter', ' ', 'z', 'Z'].includes(key)) {
                 soundFX.select();
                 const activeMonster = player.party[0];
-                if (this.enemy.hp <= 0 || activeMonster.hp <= 0 || this.state === 'caught') {
+
+                // CORREÇÃO CRÍTICA: Encerra a batalha se capturado, fugiu ou se alguém morreu
+                if (this.state === 'caught' || this.enemy.hp <= 0 || activeMonster.hp <= 0) {
                     this.endBattle();
                 } else {
                     this.state = 'player_turn';
@@ -563,7 +559,7 @@ const battleSystem = {
                 soundFX.select();
             }
 
-            if (['a', 'A', 'Enter', ' '].includes(key)) {
+            if (['a', 'A', 'Enter', ' ', 'z', 'Z'].includes(key)) {
                 soundFX.select();
                 const activeMonster = player.party[0];
 
@@ -577,6 +573,8 @@ const battleSystem = {
 
                     if (this.enemy.hp > 0) {
                         setTimeout(() => this.triggerEnemyTurn(), 1200);
+                    } else {
+                        this.message = `${this.enemy.name} desmaiou!`;
                     }
                 } else if (this.selectedOption === 1) {
                     // CAPTURAR
@@ -615,6 +613,13 @@ const battleSystem = {
             player.party.push({ ...this.enemy });
             this.message = `Gotcha! ${this.enemy.name} foi capturado!`;
             this.state = 'caught';
+
+            // CORREÇÃO: Força o encerramento da batalha automaticamente em 2.5s se não clicar A
+            setTimeout(() => {
+                if (this.active && this.state === 'caught') {
+                    this.endBattle();
+                }
+            }, 2500);
         } else {
             soundFX.hit();
             this.message = `Ah nao! ${this.enemy.name} escapou!`;
@@ -676,6 +681,7 @@ const battleSystem = {
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // Desenha o inimigo se ele não tiver sido capturado
         if (this.state !== 'caught') {
             ctx.drawImage(sprites.wildMonster, 110, 12);
         }
@@ -698,6 +704,7 @@ const battleSystem = {
             ctx.drawImage(sprites.pokeball, this.pokeballAnim.x, this.pokeballAnim.y);
         }
 
+        // Caixa de texto inferior
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 90, 160, 54);
         ctx.strokeStyle = COLOR.DARKEST;
@@ -719,7 +726,7 @@ const battleSystem = {
     }
 };
 
-// Transição
+// Gerenciamento de Transição
 const transitionManager = {
     active: false,
     alpha: 0,
@@ -773,7 +780,7 @@ function executeWarp(warp) {
     player.isMoving = false;
 }
 
-// Diálogos
+// Diálogos de NPCs
 const dialogueSystem = {
     active: false,
     lines: [],
@@ -802,7 +809,7 @@ const dialogueSystem = {
     }
 };
 
-// Controles
+// Eventos de Controles (Teclado)
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
@@ -833,6 +840,7 @@ window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
 
+// Eventos de Controles Toque/Clique (Tela)
 function bindTouchButton(elementId, keyName, isAction = false) {
     const btn = document.getElementById(elementId);
     if (!btn) return;
