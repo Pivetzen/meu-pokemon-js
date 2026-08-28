@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG GameBoy Style</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="gameboy-container">
+        <!-- Tela Principal do Jogo -->
+        <canvas id="gameCanvas" width="160" height="144"></canvas>
+
+        <!-- D-Pad e Botões de Controle (Para Mobile) -->
+        <div class="controls">
+            <div class="dpad">
+                <button id="btnUp" class="dpad-btn up">▲</button>
+                <div class="dpad-middle">
+                    <button id="btnLeft" class="dpad-btn left">◄</button>
+                    <button id="btnRight" class="dpad-btn right">►</button>
+                </div>
+                <button id="btnDown" class="dpad-btn down">▼</button>
+            </div>
+            <div class="action-buttons">
+                <button id="btnB" class="btn-action b">B</button>
+                <button id="btnA" class="btn-action a">A</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
