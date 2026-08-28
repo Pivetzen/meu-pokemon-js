@@ -28,7 +28,7 @@ body {
     max-width: 360px;
 }
 
-/* Renderização sem borrão (pixel art nítido) */
+/* Renderização nítida em Pixel Art */
 canvas {
     background-color: #9bbc0f;
     border: 4px solid #0f380f;
