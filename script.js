@@ -148,7 +148,7 @@ const soundFX = {
 };
 
 // ==========================================
-// DEFINIÇÃO DOS MAPAS (PALLET, ROTA 1, VIRIDIAN)
+// DEFINIÇÃO DOS MAPAS
 // ==========================================
 const maps = {
     town: {
@@ -253,7 +253,7 @@ const maps = {
     },
     viridian: {
         grid: [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
             [1, 0, 3, 3, 3, 0, 3, 3, 3, 1],
             [1, 0, 3, 2, 3, 0, 3, 8, 3, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -264,6 +264,8 @@ const maps = {
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         ],
         warps: [
+            { x: 4, y: 0, targetMap: 'route2', targetX: 4, targetY: 7, targetDir: 'up' },
+            { x: 5, y: 0, targetMap: 'route2', targetX: 5, targetY: 7, targetDir: 'up' },
             { x: 3, y: 2, targetMap: 'pokecenter', targetX: 4, targetY: 7, targetDir: 'up' },
             { x: 7, y: 2, targetMap: 'pokemart', targetX: 4, targetY: 7, targetDir: 'up' },
             { x: 4, y: 7, targetMap: 'route1', targetX: 4, targetY: 1, targetDir: 'down' },
@@ -277,9 +279,78 @@ const maps = {
                 direction: 'right',
                 dialogue: [
                     "CIDADAO: Bem-vindo a Viridian City!",
-                    "CIDADAO: O prédio da esquerda e o PokéCenter e o da direita e o PokéMart!"
+                    "CIDADAO: Suba ao Norte para chegar na Rota 2 e Floresta de Viridian!"
                 ]
             }
+        ]
+    },
+    route2: {
+        grid: [
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+            [1, 7, 7, 1, 0, 0, 1, 7, 7, 1],
+            [1, 7, 7, 1, 0, 0, 1, 7, 7, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 7, 7, 7, 0, 0, 7, 7, 7, 1],
+            [1, 7, 7, 7, 0, 0, 7, 7, 7, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ],
+        warps: [
+            { x: 4, y: 0, targetMap: 'viridianForest', targetX: 4, targetY: 7, targetDir: 'up' },
+            { x: 5, y: 0, targetMap: 'viridianForest', targetX: 5, targetY: 7, targetDir: 'up' },
+            { x: 4, y: 7, targetMap: 'viridian', targetX: 4, targetY: 1, targetDir: 'down' },
+            { x: 5, y: 7, targetMap: 'viridian', targetX: 5, targetY: 1, targetDir: 'down' }
+        ],
+        npcs: [
+            {
+                id: 'route2_npc',
+                x: 2,
+                y: 3,
+                direction: 'right',
+                dialogue: [
+                    "JOVEM: A Floresta de Viridian e logo a frente. Cuidado com os insetos!"
+                ]
+            }
+        ],
+        wildEnounters: [
+            { name: 'CATERPIE', hp: 14, maxHp: 14, level: 3 },
+            { name: 'WEEDLE', hp: 14, maxHp: 14, level: 3 },
+            { name: 'PIDGEY', hp: 18, maxHp: 18, level: 4 }
+        ]
+    },
+    viridianForest: {
+        grid: [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 7, 7, 7, 0, 0, 7, 7, 7, 1],
+            [1, 7, 1, 7, 1, 1, 7, 1, 7, 1],
+            [1, 7, 1, 7, 0, 0, 7, 1, 7, 1],
+            [1, 0, 1, 7, 7, 7, 7, 1, 0, 1],
+            [1, 7, 1, 1, 1, 1, 1, 1, 7, 1],
+            [1, 7, 7, 7, 0, 0, 7, 7, 7, 1],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ],
+        warps: [
+            { x: 4, y: 7, targetMap: 'route2', targetX: 4, targetY: 1, targetDir: 'down' },
+            { x: 5, y: 7, targetMap: 'route2', targetX: 5, targetY: 1, targetDir: 'down' }
+        ],
+        npcs: [
+            {
+                id: 'bug_catcher',
+                x: 3,
+                y: 4,
+                direction: 'right',
+                dialogue: [
+                    "CACADOR: Dizem que Pikachu raramente aparece por esta floresta!"
+                ]
+            }
+        ],
+        wildEnounters: [
+            { name: 'CATERPIE', hp: 16, maxHp: 16, level: 4 },
+            { name: 'WEEDLE', hp: 16, maxHp: 16, level: 4 },
+            { name: 'METAPOD', hp: 22, maxHp: 22, level: 5 },
+            { name: 'PIKACHU', hp: 20, maxHp: 20, level: 5 }
         ]
     },
     pokecenter: {
@@ -541,7 +612,7 @@ const shopSystem = {
     },
 
     buyItem() {
-        if (this.selectedOption === 0) { // Pokebola $200
+        if (this.selectedOption === 0) {
             if (player.money >= 200) {
                 player.money -= 200;
                 player.pokeballs++;
@@ -551,7 +622,7 @@ const shopSystem = {
                 soundFX.bump();
                 this.message = 'Dinheiro insuficiente!';
             }
-        } else if (this.selectedOption === 1) { // Pocao $300
+        } else if (this.selectedOption === 1) {
             if (player.money >= 300) {
                 player.money -= 300;
                 player.potions++;
