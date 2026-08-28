@@ -122,6 +122,23 @@ const soundFX = {
             osc.start(audioCtx.currentTime + (idx * 0.08));
             osc.stop(audioCtx.currentTime + (idx * 0.08) + 0.07);
         });
+    },
+
+    heal() {
+        if (!audioCtx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.08));
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime + (idx * 0.08));
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + (idx * 0.08) + 0.07);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + (idx * 0.08));
+            osc.stop(audioCtx.currentTime + (idx * 0.08) + 0.07);
+        });
     }
 };
 
@@ -177,8 +194,10 @@ const maps = {
                 x: 2,
                 y: 2,
                 direction: 'right',
+                healer: true,
                 dialogue: [
-                    "MAE: Recupere as energias do seu time antes de ir lutar!"
+                    "MAE: Voce parece cansado. Deixe-me cuidar dos seus Pokemon...",
+                    "MAE: Prontinho! Seu time esta totalmente recuperado!"
                 ]
             }
         ]
@@ -502,7 +521,7 @@ function loadGame() {
     }
 }
 
-// Sistema de Batalha (CORRIGIDO)
+// Batalha
 const battleSystem = {
     active: false,
     state: 'intro',
@@ -533,13 +552,11 @@ const battleSystem = {
     handleInput(key) {
         if (this.state === 'intro_flash' || this.pokeballAnim.active) return;
 
-        // Avança caixas de texto nas mensagens de vitória, captura ou ataque
         if (this.state === 'message' || this.state === 'caught') {
             if (['a', 'A', 'Enter', ' ', 'z', 'Z'].includes(key)) {
                 soundFX.select();
                 const activeMonster = player.party[0];
 
-                // CORREÇÃO CRÍTICA: Encerra a batalha se capturado, fugiu ou se alguém morreu
                 if (this.state === 'caught' || this.enemy.hp <= 0 || activeMonster.hp <= 0) {
                     this.endBattle();
                 } else {
@@ -564,7 +581,6 @@ const battleSystem = {
                 const activeMonster = player.party[0];
 
                 if (this.selectedOption === 0) {
-                    // ATACAR
                     soundFX.hit();
                     const damage = Math.floor(Math.random() * 4) + 4;
                     this.enemy.hp = Math.max(0, this.enemy.hp - damage);
@@ -577,7 +593,6 @@ const battleSystem = {
                         this.message = `${this.enemy.name} desmaiou!`;
                     }
                 } else if (this.selectedOption === 1) {
-                    // CAPTURAR
                     if (player.pokeballs <= 0) {
                         this.message = "Voce nao tem mais Pokebolas!";
                         this.state = 'message';
@@ -589,7 +604,6 @@ const battleSystem = {
                         this.throwPokeball();
                     }
                 } else if (this.selectedOption === 2) {
-                    // FUGIR
                     this.message = "Voce fugiu com seguranca!";
                     this.state = 'message';
                     this.enemy.hp = 0;
@@ -614,7 +628,6 @@ const battleSystem = {
             this.message = `Gotcha! ${this.enemy.name} foi capturado!`;
             this.state = 'caught';
 
-            // CORREÇÃO: Força o encerramento da batalha automaticamente em 2.5s se não clicar A
             setTimeout(() => {
                 if (this.active && this.state === 'caught') {
                     this.endBattle();
@@ -681,7 +694,6 @@ const battleSystem = {
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Desenha o inimigo se ele não tiver sido capturado
         if (this.state !== 'caught') {
             ctx.drawImage(sprites.wildMonster, 110, 12);
         }
@@ -704,7 +716,6 @@ const battleSystem = {
             ctx.drawImage(sprites.pokeball, this.pokeballAnim.x, this.pokeballAnim.y);
         }
 
-        // Caixa de texto inferior
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 90, 160, 54);
         ctx.strokeStyle = COLOR.DARKEST;
@@ -726,7 +737,7 @@ const battleSystem = {
     }
 };
 
-// Gerenciamento de Transição
+// Transição
 const transitionManager = {
     active: false,
     alpha: 0,
@@ -780,7 +791,7 @@ function executeWarp(warp) {
     player.isMoving = false;
 }
 
-// Diálogos de NPCs
+// Diálogos
 const dialogueSystem = {
     active: false,
     lines: [],
@@ -809,7 +820,7 @@ const dialogueSystem = {
     }
 };
 
-// Eventos de Controles (Teclado)
+// Controles
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
@@ -840,7 +851,6 @@ window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
 
-// Eventos de Controles Toque/Clique (Tela)
 function bindTouchButton(elementId, keyName, isAction = false) {
     const btn = document.getElementById(elementId);
     if (!btn) return;
@@ -912,7 +922,12 @@ function handleInteract() {
     const currentMap = maps[currentMapId];
     const hitNpc = currentMap.npcs.find(npc => npc.x === targetX && npc.y === targetY);
     if (hitNpc) {
-        soundFX.select();
+        if (hitNpc.healer) {
+            player.party.forEach(mon => mon.hp = mon.maxHp);
+            soundFX.heal();
+        } else {
+            soundFX.select();
+        }
         dialogueSystem.start(hitNpc.dialogue, hitNpc);
     }
 }
