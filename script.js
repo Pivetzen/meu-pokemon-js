@@ -90,7 +90,6 @@ const soundFX = {
         osc.stop(audioCtx.currentTime + 0.12);
     },
 
-    // Som de Captura Bem-sucedida (Fanfarra curta)
     catchSuccess() {
         if (!audioCtx) return;
         const notes = [523.25, 659.25, 783.99, 1046.50];
@@ -105,6 +104,23 @@ const soundFX = {
             gain.connect(audioCtx.destination);
             osc.start(audioCtx.currentTime + (idx * 0.1));
             osc.stop(audioCtx.currentTime + (idx * 0.1) + 0.09);
+        });
+    },
+
+    save() {
+        if (!audioCtx) return;
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.08));
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime + (idx * 0.08));
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + (idx * 0.08) + 0.07);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + (idx * 0.08));
+            osc.stop(audioCtx.currentTime + (idx * 0.08) + 0.07);
         });
     }
 };
@@ -133,8 +149,8 @@ const maps = {
                 y: 4,
                 direction: 'left',
                 dialogue: [
-                    "OAK: Use Pokebolas na batalha para capturar novos monstros!",
-                    "OAK: Deixe o monstro fraco para facilitar a captura."
+                    "OAK: Pressione START para abrir o Menu e ver seu Time!",
+                    "OAK: Lembre-se de SALVAR seu jogo no Menu."
                 ]
             }
         ]
@@ -339,6 +355,160 @@ const player = {
     ]
 };
 
+// Sistema de Menu / Pause
+const menuSystem = {
+    active: false,
+    view: 'main', // 'main' ou 'party'
+    selectedOption: 0, // 0 = TIME, 1 = SALVAR, 2 = SAIR
+    message: '',
+
+    open() {
+        this.active = true;
+        this.view = 'main';
+        this.selectedOption = 0;
+        this.message = '';
+        soundFX.select();
+    },
+
+    close() {
+        this.active = false;
+        soundFX.select();
+    },
+
+    handleInput(key) {
+        if (this.view === 'main') {
+            if (key === 'ArrowUp' || key === 'w' || key === 'W') {
+                this.selectedOption = (this.selectedOption - 1 + 3) % 3;
+                soundFX.select();
+            }
+            if (key === 'ArrowDown' || key === 's' || key === 'S') {
+                this.selectedOption = (this.selectedOption + 1) % 3;
+                soundFX.select();
+            }
+
+            if (['a', 'A', 'Enter', ' '].includes(key)) {
+                soundFX.select();
+                if (this.selectedOption === 0) {
+                    // TIME
+                    this.view = 'party';
+                } else if (this.selectedOption === 1) {
+                    // SALVAR
+                    saveGame();
+                    soundFX.save();
+                    this.message = "Jogo Salvo!";
+                } else if (this.selectedOption === 2) {
+                    // SAIR
+                    this.close();
+                }
+            }
+
+            if (['b', 'B', 'Escape'].includes(key)) {
+                this.close();
+            }
+        } else if (this.view === 'party') {
+            if (['b', 'B', 'a', 'A', 'Escape', 'Enter', ' '].includes(key)) {
+                soundFX.select();
+                this.view = 'main';
+            }
+        }
+    },
+
+    draw() {
+        if (!this.active) return;
+
+        if (this.view === 'main') {
+            // Caixa de Menu no Canto Direiro Superior
+            const boxX = 90;
+            const boxY = 8;
+            const boxW = 62;
+            const boxH = 68;
+
+            ctx.fillStyle = COLOR.LIGHTEST;
+            ctx.fillRect(boxX, boxY, boxW, boxH);
+            ctx.strokeStyle = COLOR.DARKEST;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+            ctx.fillStyle = COLOR.DARKEST;
+            ctx.font = '8px monospace';
+            ctx.textBaseline = 'top';
+
+            ctx.fillText("TIME", boxX + 16, boxY + 12);
+            ctx.fillText("SALVAR", boxX + 16, boxY + 28);
+            ctx.fillText("SAIR", boxX + 16, boxY + 44);
+
+            const arrowY = boxY + 12 + (this.selectedOption * 16);
+            ctx.fillText(">", boxX + 6, arrowY);
+
+            // Mensagem de Feedback de Salvamento
+            if (this.message) {
+                ctx.fillStyle = COLOR.LIGHTEST;
+                ctx.fillRect(8, 110, 144, 26);
+                ctx.strokeStyle = COLOR.DARKEST;
+                ctx.strokeRect(8, 110, 144, 26);
+                ctx.fillStyle = COLOR.DARKEST;
+                ctx.fillText(this.message, 16, 118);
+            }
+        } else if (this.view === 'party') {
+            // Tela Cheia de Visualização da Equipe
+            ctx.fillStyle = COLOR.LIGHTEST;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = COLOR.DARKEST;
+            ctx.font = '8px monospace';
+            ctx.fillText("--- SEU TIME ---", 30, 8);
+
+            player.party.forEach((mon, idx) => {
+                const startY = 22 + (idx * 18);
+
+                ctx.fillText(`${idx + 1}.${mon.name}`, 8, startY);
+                ctx.fillText(`L${mon.level}`, 75, startY);
+
+                // Barra de HP
+                ctx.strokeRect(95, startY, 35, 4);
+                ctx.fillRect(95, startY, (mon.hp / mon.maxHp) * 35, 4);
+                ctx.fillText(`${mon.hp}/${mon.maxHp}`, 133, startY);
+            });
+
+            ctx.fillText("Pressione B para voltar", 10, 132);
+        }
+    }
+};
+
+// Salvar / Carregar Dados (localStorage)
+function saveGame() {
+    const saveData = {
+        currentMapId,
+        playerX: player.x,
+        playerY: player.y,
+        playerDirection: player.direction,
+        pokeballs: player.pokeballs,
+        party: player.party
+    };
+    localStorage.setItem('rpg_gameboy_save', JSON.stringify(saveData));
+}
+
+function loadGame() {
+    const raw = localStorage.getItem('rpg_gameboy_save');
+    if (!raw) return;
+
+    try {
+        const saveData = JSON.parse(raw);
+        currentMapId = saveData.currentMapId || 'town';
+        player.x = saveData.playerX || 1;
+        player.y = saveData.playerY || 1;
+        player.pixelX = player.x * TILE_SIZE;
+        player.pixelY = player.y * TILE_SIZE;
+        player.targetPixelX = player.pixelX;
+        player.targetPixelY = player.pixelY;
+        player.direction = saveData.playerDirection || 'down';
+        player.pokeballs = saveData.pokeballs ?? 5;
+        player.party = saveData.party || [{ name: 'PIKACHU', hp: 20, maxHp: 20, level: 5 }];
+    } catch (e) {
+        console.error("Erro ao carregar save:", e);
+    }
+}
+
 // Batalha
 const battleSystem = {
     active: false,
@@ -437,7 +607,6 @@ const battleSystem = {
     },
 
     attemptCatch() {
-        // Quanto menor a vida, maior a chance de captura (entre 40% e 90%)
         const hpRatio = this.enemy.hp / this.enemy.maxHp;
         const catchChance = 0.9 - (hpRatio * 0.5);
 
@@ -507,34 +676,28 @@ const battleSystem = {
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Monstro Inimigo (esconde se foi capturado)
         if (this.state !== 'caught') {
             ctx.drawImage(sprites.wildMonster, 110, 12);
         }
 
-        // HUD Inimigo
         ctx.fillStyle = COLOR.DARKEST;
         ctx.font = '8px monospace';
         ctx.fillText(`${this.enemy.name} L${this.enemy.level}`, 8, 12);
         ctx.strokeRect(8, 20, 50, 4);
         ctx.fillRect(8, 20, (this.enemy.hp / this.enemy.maxHp) * 50, 4);
 
-        // Monstro Ativo do Jogador
         const activeMonster = player.party[0];
         ctx.drawImage(sprites.heroMonster, 16, 50);
 
-        // HUD Jogador
         ctx.fillText(`${activeMonster.name} L${activeMonster.level}`, 88, 56);
         ctx.strokeRect(88, 64, 50, 4);
         ctx.fillRect(88, 64, (activeMonster.hp / activeMonster.maxHp) * 50, 4);
         ctx.fillText(`HP:${activeMonster.hp}/${activeMonster.maxHp}`, 88, 74);
 
-        // Desenhar animação da Pokébola
         if (this.pokeballAnim.active) {
             ctx.drawImage(sprites.pokeball, this.pokeballAnim.x, this.pokeballAnim.y);
         }
 
-        // Caixa de Controle / Mensagem Inferior
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 90, 160, 54);
         ctx.strokeStyle = COLOR.DARKEST;
@@ -650,6 +813,16 @@ window.addEventListener('keydown', (e) => {
         return;
     }
 
+    if (menuSystem.active) {
+        menuSystem.handleInput(e.key);
+        return;
+    }
+
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+        menuSystem.open();
+        return;
+    }
+
     if (['Enter', ' ', 'z', 'Z', 'a', 'A'].includes(e.key)) {
         handleInteract();
     }
@@ -662,19 +835,34 @@ window.addEventListener('keyup', (e) => {
 
 function bindTouchButton(elementId, keyName, isAction = false) {
     const btn = document.getElementById(elementId);
+    if (!btn) return;
+
     const start = (e) => {
         e.preventDefault();
         initAudio();
+
         if (battleSystem.active) {
             battleSystem.handleInput(keyName);
             return;
         }
+
+        if (menuSystem.active) {
+            menuSystem.handleInput(keyName);
+            return;
+        }
+
+        if (keyName === 'Start') {
+            menuSystem.open();
+            return;
+        }
+
         if (isAction) {
             handleInteract();
         } else {
             keys[keyName] = true;
         }
     };
+
     const end = (e) => {
         e.preventDefault();
         if (!isAction) keys[keyName] = false;
@@ -691,9 +879,11 @@ bindTouchButton('btnDown', 'ArrowDown');
 bindTouchButton('btnLeft', 'ArrowLeft');
 bindTouchButton('btnRight', 'ArrowRight');
 bindTouchButton('btnA', 'a', true);
+bindTouchButton('btnB', 'b');
+bindTouchButton('btnStart', 'Start');
 
 function handleInteract() {
-    if (transitionManager.active || battleSystem.active) return;
+    if (transitionManager.active || battleSystem.active || menuSystem.active) return;
 
     if (dialogueSystem.active) {
         soundFX.select();
@@ -738,6 +928,8 @@ function update() {
         return;
     }
 
+    if (menuSystem.active) return;
+
     transitionManager.update();
     if (dialogueSystem.active || transitionManager.active) return;
 
@@ -776,7 +968,7 @@ function update() {
             player.isMoving = false;
 
             const currentMap = maps[currentMapId];
-            
+
             const warpHit = currentMap.warps.find(w => w.x === player.x && w.y === player.y);
             if (warpHit) {
                 transitionManager.start(warpHit);
@@ -858,6 +1050,7 @@ function draw() {
     ctx.drawImage(playerSprite, player.pixelX, player.pixelY);
 
     drawDialogueBox();
+    menuSystem.draw();
     transitionManager.draw();
 }
 
@@ -867,4 +1060,8 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
+// Inicializar Save
+loadGame();
+
+// Loop Principal
 gameLoop();
