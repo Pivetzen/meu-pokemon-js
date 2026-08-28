@@ -13,10 +13,91 @@ const COLOR = {
     LIGHTEST: '#9bbc0f'
 };
 
+// ==========================================
+// SISTEMA DE ÁUDIO SINTETIZADO (Web Audio)
+// ==========================================
+let audioCtx = null;
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+const soundFX = {
+    // Som de Clique / Seleção (Botão A, avançar diálogo)
+    select() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+    },
+
+    // Som de Colisão (Bater na parede)
+    bump() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+    },
+
+    // Som de Início de Batalha (Arpejo rápido)
+    battleStart() {
+        if (!audioCtx) return;
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+        notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.06));
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime + (idx * 0.06));
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + (idx * 0.06) + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + (idx * 0.06));
+            osc.stop(audioCtx.currentTime + (idx * 0.06) + 0.05);
+        });
+    },
+
+    // Som de Ataque / Golpe em Batalha
+    hit() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.12);
+    }
+};
+
 // Definição dos Mapas
 const maps = {
     town: {
-        // 0: Grama, 1: Árvore/Parede, 2: Porta, 3: Parede Casa, 7: Grama Alta (Batalha)
         grid: [
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 0, 0, 0, 0, 7, 7, 7, 0, 1],
@@ -92,7 +173,6 @@ function createTileSprite(type) {
         cx.fillStyle = COLOR.LIGHT;
         cx.fillRect(0, 0, 16, 16);
         cx.fillStyle = COLOR.DARKEST;
-        // Arbusto mais denso de grama alta
         cx.fillRect(1, 2, 3, 12); cx.fillRect(5, 1, 3, 14);
         cx.fillRect(9, 3, 3, 11); cx.fillRect(13, 2, 2, 12);
         cx.fillStyle = COLOR.DARK;
@@ -140,20 +220,18 @@ function createMonsterSprite(type) {
 
     cx.fillStyle = COLOR.DARKEST;
     if (type === 'hero') {
-        // Dragãozinho (Costas)
         cx.fillRect(8, 8, 16, 18);
         cx.fillRect(4, 14, 4, 8);
         cx.fillRect(24, 14, 4, 8);
         cx.fillStyle = COLOR.DARK;
         cx.fillRect(10, 12, 12, 10);
     } else {
-        // Monstro Selvagem (Frente)
         cx.fillRect(6, 6, 20, 20);
         cx.fillStyle = COLOR.LIGHTEST;
-        cx.fillRect(10, 10, 4, 4); cx.fillRect(18, 10, 4, 4); // Olhos
+        cx.fillRect(10, 10, 4, 4); cx.fillRect(18, 10, 4, 4);
         cx.fillStyle = COLOR.DARKEST;
         cx.fillRect(11, 11, 2, 2); cx.fillRect(19, 11, 2, 2);
-        cx.fillRect(10, 18, 12, 3); // Boca
+        cx.fillRect(10, 18, 12, 3);
     }
     return c;
 }
@@ -222,12 +300,12 @@ const player = {
     monster: { name: 'PIKACHU', hp: 20, maxHp: 20, level: 5 }
 };
 
-// Gerenciador de Batalha
+// Batalha
 const battleSystem = {
     active: false,
-    state: 'intro', // 'intro', 'player_turn', 'enemy_turn', 'message', 'ended'
+    state: 'intro',
     flashTimer: 0,
-    selectedOption: 0, // 0 = ATACAR, 1 = FUGIR
+    selectedOption: 0,
     enemy: null,
     message: '',
 
@@ -238,6 +316,7 @@ const battleSystem = {
         this.selectedOption = 0;
         this.enemy = { name: 'RATATA', hp: 15, maxHp: 15, level: 3 };
         this.message = `Um ${this.enemy.name} selvagem apareceu!`;
+        soundFX.battleStart();
     },
 
     handleInput(key) {
@@ -245,6 +324,7 @@ const battleSystem = {
 
         if (this.state === 'message') {
             if (['a', 'A', 'Enter', ' '].includes(key)) {
+                soundFX.select();
                 if (this.enemy.hp <= 0 || player.monster.hp <= 0) {
                     this.endBattle();
                 } else {
@@ -255,12 +335,20 @@ const battleSystem = {
         }
 
         if (this.state === 'player_turn') {
-            if (key === 'ArrowUp' || key === 'w' || key === 'W') this.selectedOption = 0;
-            if (key === 'ArrowDown' || key === 's' || key === 'S') this.selectedOption = 1;
+            if (key === 'ArrowUp' || key === 'w' || key === 'W') {
+                this.selectedOption = 0;
+                soundFX.select();
+            }
+            if (key === 'ArrowDown' || key === 's' || key === 'S') {
+                this.selectedOption = 1;
+                soundFX.select();
+            }
 
             if (['a', 'A', 'Enter', ' '].includes(key)) {
+                soundFX.select();
                 if (this.selectedOption === 0) {
                     // Atacar
+                    soundFX.hit();
                     const damage = Math.floor(Math.random() * 4) + 4;
                     this.enemy.hp = Math.max(0, this.enemy.hp - damage);
                     this.message = `${player.monster.name} atacou! Causou ${damage} de dano.`;
@@ -273,7 +361,7 @@ const battleSystem = {
                     // Fugir
                     this.message = "Voce fugiu com seguranca!";
                     this.state = 'message';
-                    this.enemy.hp = 0; // Encerra a batalha ao prosseguir
+                    this.enemy.hp = 0;
                 }
             }
         }
@@ -281,20 +369,21 @@ const battleSystem = {
 
     triggerEnemyTurn() {
         if (!this.active || this.enemy.hp <= 0) return;
+        soundFX.hit();
         const damage = Math.floor(Math.random() * 3) + 2;
         player.monster.hp = Math.max(0, player.monster.hp - damage);
         this.message = `${this.enemy.name} atacou! Causou ${damage} de dano.`;
         this.state = 'message';
 
         if (player.monster.hp <= 0) {
-            this.message = `${player.monster.name} fainted! Voce perdeu...`;
+            this.message = `${player.monster.name} desmaiou! Voce perdeu...`;
         }
     },
 
     endBattle() {
         this.active = false;
         if (player.monster.hp <= 0) {
-            player.monster.hp = player.monster.maxHp; // Cura ao perder
+            player.monster.hp = player.monster.maxHp;
             executeWarp({ targetMap: 'house', targetX: 2, targetY: 3, targetDir: 'down' });
         }
     },
@@ -317,28 +406,22 @@ const battleSystem = {
             return;
         }
 
-        // Fundo
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Monstro Inimigo (Canto superior direito)
         ctx.drawImage(sprites.wildMonster, 110, 12);
-        // HUD Inimigo
         ctx.fillStyle = COLOR.DARKEST;
         ctx.font = '8px monospace';
         ctx.fillText(`${this.enemy.name} L${this.enemy.level}`, 8, 12);
         ctx.strokeRect(8, 20, 50, 4);
         ctx.fillRect(8, 20, (this.enemy.hp / this.enemy.maxHp) * 50, 4);
 
-        // Monstro do Jogador (Canto inferior esquerdo)
         ctx.drawImage(sprites.heroMonster, 16, 50);
-        // HUD Jogador
         ctx.fillText(`${player.monster.name} L${player.monster.level}`, 88, 56);
         ctx.strokeRect(88, 64, 50, 4);
         ctx.fillRect(88, 64, (player.monster.hp / player.monster.maxHp) * 50, 4);
         ctx.fillText(`HP:${player.monster.hp}/${player.monster.maxHp}`, 88, 74);
 
-        // Caixa de Controle / Mensagem Inferior
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 90, 160, 54);
         ctx.strokeStyle = COLOR.DARKEST;
@@ -346,22 +429,19 @@ const battleSystem = {
         ctx.strokeRect(2, 92, 156, 50);
 
         if (this.state === 'player_turn') {
-            // Menu de Opções
             ctx.fillStyle = COLOR.DARKEST;
             ctx.fillText("ATACAR", 20, 108);
             ctx.fillText("FUGIR", 20, 124);
-            // Seta de Seleção
             const arrowY = this.selectedOption === 0 ? 108 : 124;
             ctx.fillText(">", 10, arrowY);
         } else {
-            // Exibição de Mensagens
             ctx.fillStyle = COLOR.DARKEST;
             ctx.fillText(this.message, 10, 108);
         }
     }
 };
 
-// Gerenciador de Transição de Tela
+// Transição
 const transitionManager = {
     active: false,
     alpha: 0,
@@ -448,6 +528,8 @@ const dialogueSystem = {
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
+    initAudio(); // Inicializa áudio no primeiro clique/tecla
+
     if (battleSystem.active) {
         battleSystem.handleInput(e.key);
         return;
@@ -467,6 +549,7 @@ function bindTouchButton(elementId, keyName, isAction = false) {
     const btn = document.getElementById(elementId);
     const start = (e) => {
         e.preventDefault();
+        initAudio();
         if (battleSystem.active) {
             battleSystem.handleInput(keyName);
             return;
@@ -498,6 +581,7 @@ function handleInteract() {
     if (transitionManager.active || battleSystem.active) return;
 
     if (dialogueSystem.active) {
+        soundFX.select();
         dialogueSystem.advance();
         return;
     }
@@ -515,6 +599,7 @@ function handleInteract() {
     const currentMap = maps[currentMapId];
     const hitNpc = currentMap.npcs.find(npc => npc.x === targetX && npc.y === targetY);
     if (hitNpc) {
+        soundFX.select();
         dialogueSystem.start(hitNpc.dialogue, hitNpc);
     }
 }
@@ -560,6 +645,9 @@ function update() {
                 player.targetPixelX = nextX * TILE_SIZE;
                 player.targetPixelY = nextY * TILE_SIZE;
                 player.isMoving = true;
+            } else {
+                // Toca som de bloqueio se tentar andar contra uma parede
+                soundFX.bump();
             }
         }
     }
@@ -575,14 +663,12 @@ function update() {
 
             const currentMap = maps[currentMapId];
             
-            // Checa portal
             const warpHit = currentMap.warps.find(w => w.x === player.x && w.y === player.y);
             if (warpHit) {
                 transitionManager.start(warpHit);
                 return;
             }
 
-            // Checa Encontro Aleatório na Grama Alta (30% de chance a cada passo)
             if (currentMap.grid[player.y][player.x] === 7) {
                 if (Math.random() < 0.3) {
                     battleSystem.start();
@@ -642,7 +728,6 @@ function draw() {
 
     const currentMap = maps[currentMapId];
 
-    // Desenhar Mapa
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
             const tileType = currentMap.grid[r][c];
@@ -650,20 +735,15 @@ function draw() {
         }
     }
 
-    // Desenhar NPCs
     currentMap.npcs.forEach(npc => {
         const npcSprite = sprites.npc[npc.direction];
         ctx.drawImage(npcSprite, npc.x * TILE_SIZE, npc.y * TILE_SIZE);
     });
 
-    // Desenhar Jogador
     const playerSprite = sprites.player[player.direction];
     ctx.drawImage(playerSprite, player.pixelX, player.pixelY);
 
-    // Caixa de Diálogo
     drawDialogueBox();
-
-    // Transição de Tela
     transitionManager.draw();
 }
 
