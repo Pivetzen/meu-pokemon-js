@@ -28,7 +28,6 @@ function initAudio() {
 }
 
 const soundFX = {
-    // Som de Clique / Seleção (Botão A, avançar diálogo)
     select() {
         if (!audioCtx) return;
         const osc = audioCtx.createOscillator();
@@ -44,7 +43,6 @@ const soundFX = {
         osc.stop(audioCtx.currentTime + 0.05);
     },
 
-    // Som de Colisão (Bater na parede)
     bump() {
         if (!audioCtx) return;
         const osc = audioCtx.createOscillator();
@@ -60,7 +58,6 @@ const soundFX = {
         osc.stop(audioCtx.currentTime + 0.08);
     },
 
-    // Som de Início de Batalha (Arpejo rápido)
     battleStart() {
         if (!audioCtx) return;
         const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
@@ -78,7 +75,6 @@ const soundFX = {
         });
     },
 
-    // Som de Ataque / Golpe em Batalha
     hit() {
         if (!audioCtx) return;
         const osc = audioCtx.createOscillator();
@@ -92,6 +88,24 @@ const soundFX = {
         gain.connect(audioCtx.destination);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.12);
+    },
+
+    // Som de Captura Bem-sucedida (Fanfarra curta)
+    catchSuccess() {
+        if (!audioCtx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.1));
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime + (idx * 0.1));
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + (idx * 0.1) + 0.09);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + (idx * 0.1));
+            osc.stop(audioCtx.currentTime + (idx * 0.1) + 0.09);
+        });
     }
 };
 
@@ -119,8 +133,8 @@ const maps = {
                 y: 4,
                 direction: 'left',
                 dialogue: [
-                    "OAK: Cuidado com a grama alta acima!",
-                    "OAK: Monstros selvagens podem aparecer la."
+                    "OAK: Use Pokebolas na batalha para capturar novos monstros!",
+                    "OAK: Deixe o monstro fraco para facilitar a captura."
                 ]
             }
         ]
@@ -148,7 +162,7 @@ const maps = {
                 y: 2,
                 direction: 'right',
                 dialogue: [
-                    "MAE: Recupere as energias do seu monstro antes de lutar!"
+                    "MAE: Recupere as energias do seu time antes de ir lutar!"
                 ]
             }
         ]
@@ -236,6 +250,27 @@ function createMonsterSprite(type) {
     return c;
 }
 
+function createPokeballSprite() {
+    const c = document.createElement('canvas');
+    c.width = 16;
+    c.height = 16;
+    const cx = c.getContext('2d');
+
+    cx.fillStyle = COLOR.DARKEST;
+    cx.fillRect(4, 2, 8, 12);
+    cx.fillRect(2, 4, 12, 8);
+    cx.fillStyle = COLOR.LIGHTEST;
+    cx.fillRect(4, 3, 8, 4);
+    cx.fillRect(3, 4, 10, 3);
+    cx.fillStyle = COLOR.DARKEST;
+    cx.fillRect(2, 7, 12, 2);
+    cx.fillRect(6, 6, 4, 4);
+    cx.fillStyle = COLOR.LIGHTEST;
+    cx.fillRect(7, 7, 2, 2);
+
+    return c;
+}
+
 function createCharacterSprite(colorTheme, direction) {
     const c = document.createElement('canvas');
     c.width = TILE_SIZE;
@@ -283,10 +318,11 @@ const sprites = {
     player: createCharSpriteSet(COLOR.LIGHTEST),
     npc: createCharSpriteSet(COLOR.DARK),
     heroMonster: createMonsterSprite('hero'),
-    wildMonster: createMonsterSprite('wild')
+    wildMonster: createMonsterSprite('wild'),
+    pokeball: createPokeballSprite()
 };
 
-// Jogador
+// Jogador e Time
 const player = {
     x: 1,
     y: 1,
@@ -297,7 +333,10 @@ const player = {
     speed: 1,
     direction: 'down',
     isMoving: false,
-    monster: { name: 'PIKACHU', hp: 20, maxHp: 20, level: 5 }
+    pokeballs: 5,
+    party: [
+        { name: 'PIKACHU', hp: 20, maxHp: 20, level: 5 }
+    ]
 };
 
 // Batalha
@@ -305,27 +344,37 @@ const battleSystem = {
     active: false,
     state: 'intro',
     flashTimer: 0,
-    selectedOption: 0,
+    selectedOption: 0, // 0 = ATACAR, 1 = CAPTURAR, 2 = FUGIR
     enemy: null,
     message: '',
+    pokeballAnim: { active: false, x: 20, y: 70, targetX: 118, targetY: 20 },
 
     start() {
         this.active = true;
         this.state = 'intro_flash';
         this.flashTimer = 0;
         this.selectedOption = 0;
-        this.enemy = { name: 'RATATA', hp: 15, maxHp: 15, level: 3 };
+
+        const wildMonsters = [
+            { name: 'RATATA', hp: 15, maxHp: 15, level: 3 },
+            { name: 'PIDGEY', hp: 14, maxHp: 14, level: 3 },
+            { name: 'CATERPIE', hp: 12, maxHp: 12, level: 2 }
+        ];
+        const randomChoice = wildMonsters[Math.floor(Math.random() * wildMonsters.length)];
+        this.enemy = { ...randomChoice };
+
         this.message = `Um ${this.enemy.name} selvagem apareceu!`;
         soundFX.battleStart();
     },
 
     handleInput(key) {
-        if (this.state === 'intro_flash') return;
+        if (this.state === 'intro_flash' || this.pokeballAnim.active) return;
 
         if (this.state === 'message') {
             if (['a', 'A', 'Enter', ' '].includes(key)) {
                 soundFX.select();
-                if (this.enemy.hp <= 0 || player.monster.hp <= 0) {
+                const activeMonster = player.party[0];
+                if (this.enemy.hp <= 0 || activeMonster.hp <= 0 || this.state === 'caught') {
                     this.endBattle();
                 } else {
                     this.state = 'player_turn';
@@ -336,29 +385,43 @@ const battleSystem = {
 
         if (this.state === 'player_turn') {
             if (key === 'ArrowUp' || key === 'w' || key === 'W') {
-                this.selectedOption = 0;
+                this.selectedOption = (this.selectedOption - 1 + 3) % 3;
                 soundFX.select();
             }
             if (key === 'ArrowDown' || key === 's' || key === 'S') {
-                this.selectedOption = 1;
+                this.selectedOption = (this.selectedOption + 1) % 3;
                 soundFX.select();
             }
 
             if (['a', 'A', 'Enter', ' '].includes(key)) {
                 soundFX.select();
+                const activeMonster = player.party[0];
+
                 if (this.selectedOption === 0) {
-                    // Atacar
+                    // ATACAR
                     soundFX.hit();
                     const damage = Math.floor(Math.random() * 4) + 4;
                     this.enemy.hp = Math.max(0, this.enemy.hp - damage);
-                    this.message = `${player.monster.name} atacou! Causou ${damage} de dano.`;
+                    this.message = `${activeMonster.name} atacou! Causou ${damage} de dano.`;
                     this.state = 'message';
 
                     if (this.enemy.hp > 0) {
                         setTimeout(() => this.triggerEnemyTurn(), 1200);
                     }
-                } else {
-                    // Fugir
+                } else if (this.selectedOption === 1) {
+                    // CAPTURAR
+                    if (player.pokeballs <= 0) {
+                        this.message = "Voce nao tem mais Pokebolas!";
+                        this.state = 'message';
+                    } else if (player.party.length >= 6) {
+                        this.message = "Seu time ja esta cheio! (Max 6)";
+                        this.state = 'message';
+                    } else {
+                        player.pokeballs--;
+                        this.throwPokeball();
+                    }
+                } else if (this.selectedOption === 2) {
+                    // FUGIR
                     this.message = "Voce fugiu com seguranca!";
                     this.state = 'message';
                     this.enemy.hp = 0;
@@ -367,23 +430,49 @@ const battleSystem = {
         }
     },
 
+    throwPokeball() {
+        this.pokeballAnim = { active: true, x: 20, y: 70, targetX: 118, targetY: 20 };
+        this.message = "Voce atirou uma Pokebola!";
+        this.state = 'animating';
+    },
+
+    attemptCatch() {
+        // Quanto menor a vida, maior a chance de captura (entre 40% e 90%)
+        const hpRatio = this.enemy.hp / this.enemy.maxHp;
+        const catchChance = 0.9 - (hpRatio * 0.5);
+
+        if (Math.random() < catchChance) {
+            soundFX.catchSuccess();
+            player.party.push({ ...this.enemy });
+            this.message = `Gotcha! ${this.enemy.name} foi capturado!`;
+            this.state = 'caught';
+        } else {
+            soundFX.hit();
+            this.message = `Ah nao! ${this.enemy.name} escapou!`;
+            this.state = 'message';
+            setTimeout(() => this.triggerEnemyTurn(), 1200);
+        }
+    },
+
     triggerEnemyTurn() {
-        if (!this.active || this.enemy.hp <= 0) return;
+        if (!this.active || this.enemy.hp <= 0 || this.state === 'caught') return;
         soundFX.hit();
+        const activeMonster = player.party[0];
         const damage = Math.floor(Math.random() * 3) + 2;
-        player.monster.hp = Math.max(0, player.monster.hp - damage);
+        activeMonster.hp = Math.max(0, activeMonster.hp - damage);
         this.message = `${this.enemy.name} atacou! Causou ${damage} de dano.`;
         this.state = 'message';
 
-        if (player.monster.hp <= 0) {
-            this.message = `${player.monster.name} desmaiou! Voce perdeu...`;
+        if (activeMonster.hp <= 0) {
+            this.message = `${activeMonster.name} desmaiou! Voce perdeu...`;
         }
     },
 
     endBattle() {
         this.active = false;
-        if (player.monster.hp <= 0) {
-            player.monster.hp = player.monster.maxHp;
+        const activeMonster = player.party[0];
+        if (activeMonster.hp <= 0) {
+            activeMonster.hp = activeMonster.maxHp;
             executeWarp({ targetMap: 'house', targetX: 2, targetY: 3, targetDir: 'down' });
         }
     },
@@ -393,6 +482,15 @@ const battleSystem = {
             this.flashTimer++;
             if (this.flashTimer > 30) {
                 this.state = 'message';
+            }
+        }
+
+        if (this.pokeballAnim.active) {
+            this.pokeballAnim.x += 4;
+            this.pokeballAnim.y -= 2;
+            if (this.pokeballAnim.x >= this.pokeballAnim.targetX) {
+                this.pokeballAnim.active = false;
+                this.attemptCatch();
             }
         }
     },
@@ -409,19 +507,34 @@ const battleSystem = {
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.drawImage(sprites.wildMonster, 110, 12);
+        // Monstro Inimigo (esconde se foi capturado)
+        if (this.state !== 'caught') {
+            ctx.drawImage(sprites.wildMonster, 110, 12);
+        }
+
+        // HUD Inimigo
         ctx.fillStyle = COLOR.DARKEST;
         ctx.font = '8px monospace';
         ctx.fillText(`${this.enemy.name} L${this.enemy.level}`, 8, 12);
         ctx.strokeRect(8, 20, 50, 4);
         ctx.fillRect(8, 20, (this.enemy.hp / this.enemy.maxHp) * 50, 4);
 
+        // Monstro Ativo do Jogador
+        const activeMonster = player.party[0];
         ctx.drawImage(sprites.heroMonster, 16, 50);
-        ctx.fillText(`${player.monster.name} L${player.monster.level}`, 88, 56);
-        ctx.strokeRect(88, 64, 50, 4);
-        ctx.fillRect(88, 64, (player.monster.hp / player.monster.maxHp) * 50, 4);
-        ctx.fillText(`HP:${player.monster.hp}/${player.monster.maxHp}`, 88, 74);
 
+        // HUD Jogador
+        ctx.fillText(`${activeMonster.name} L${activeMonster.level}`, 88, 56);
+        ctx.strokeRect(88, 64, 50, 4);
+        ctx.fillRect(88, 64, (activeMonster.hp / activeMonster.maxHp) * 50, 4);
+        ctx.fillText(`HP:${activeMonster.hp}/${activeMonster.maxHp}`, 88, 74);
+
+        // Desenhar animação da Pokébola
+        if (this.pokeballAnim.active) {
+            ctx.drawImage(sprites.pokeball, this.pokeballAnim.x, this.pokeballAnim.y);
+        }
+
+        // Caixa de Controle / Mensagem Inferior
         ctx.fillStyle = COLOR.LIGHTEST;
         ctx.fillRect(0, 90, 160, 54);
         ctx.strokeStyle = COLOR.DARKEST;
@@ -430,9 +543,11 @@ const battleSystem = {
 
         if (this.state === 'player_turn') {
             ctx.fillStyle = COLOR.DARKEST;
-            ctx.fillText("ATACAR", 20, 108);
-            ctx.fillText("FUGIR", 20, 124);
-            const arrowY = this.selectedOption === 0 ? 108 : 124;
+            ctx.fillText("ATACAR", 20, 102);
+            ctx.fillText(`CAPTURAR (${player.pokeballs})`, 20, 116);
+            ctx.fillText("FUGIR", 20, 130);
+
+            const arrowY = 102 + (this.selectedOption * 14);
             ctx.fillText(">", 10, arrowY);
         } else {
             ctx.fillStyle = COLOR.DARKEST;
@@ -528,7 +643,7 @@ const dialogueSystem = {
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
-    initAudio(); // Inicializa áudio no primeiro clique/tecla
+    initAudio();
 
     if (battleSystem.active) {
         battleSystem.handleInput(e.key);
@@ -646,7 +761,6 @@ function update() {
                 player.targetPixelY = nextY * TILE_SIZE;
                 player.isMoving = true;
             } else {
-                // Toca som de bloqueio se tentar andar contra uma parede
                 soundFX.bump();
             }
         }
