@@ -148,7 +148,7 @@ const soundFX = {
 };
 
 // ==========================================
-// DEFINIÇÃO DOS MAPAS (COM ROTA 1)
+// DEFINIÇÃO DOS MAPAS (PALLET, ROTA 1, VIRIDIAN)
 // ==========================================
 const maps = {
     town: {
@@ -175,8 +175,8 @@ const maps = {
                 y: 4,
                 direction: 'left',
                 dialogue: [
-                    "OAK: A Rota 1 fica ao Norte!",
-                    "OAK: A grama alta esconde Pokemon selvagens mais fortes."
+                    "OAK: Siga para o Norte até Viridian!",
+                    "OAK: Lá você encontrará o PokéCenter e o PokéMart."
                 ]
             }
         ],
@@ -217,7 +217,7 @@ const maps = {
     },
     route1: {
         grid: [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
             [1, 7, 7, 0, 0, 0, 0, 7, 7, 1],
             [1, 7, 7, 0, 1, 1, 0, 7, 7, 1],
             [1, 0, 0, 0, 1, 1, 0, 0, 0, 1],
@@ -228,6 +228,8 @@ const maps = {
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         ],
         warps: [
+            { x: 4, y: 0, targetMap: 'viridian', targetX: 4, targetY: 7, targetDir: 'up' },
+            { x: 5, y: 0, targetMap: 'viridian', targetX: 5, targetY: 7, targetDir: 'up' },
             { x: 4, y: 7, targetMap: 'town', targetX: 4, targetY: 1, targetDir: 'down' },
             { x: 5, y: 7, targetMap: 'town', targetX: 5, targetY: 1, targetDir: 'down' }
         ],
@@ -238,8 +240,7 @@ const maps = {
                 y: 3,
                 direction: 'right',
                 dialogue: [
-                    "VIAJANTE: A Rota 1 e perfeita para treinar!",
-                    "VIAJANTE: Dizem que ha Nidorans e Bellsprouts raros por aqui."
+                    "VIAJANTE: Continue subindo para chegar a Cidade de Viridian!"
                 ]
             }
         ],
@@ -248,6 +249,97 @@ const maps = {
             { name: 'PIDGEY', hp: 16, maxHp: 16, level: 3 },
             { name: 'NIDORAN', hp: 18, maxHp: 18, level: 4 },
             { name: 'BELLSPROUT', hp: 17, maxHp: 17, level: 4 }
+        ]
+    },
+    viridian: {
+        grid: [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 3, 3, 3, 0, 3, 3, 3, 1],
+            [1, 0, 3, 2, 3, 0, 3, 8, 3, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
+            [1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ],
+        warps: [
+            { x: 3, y: 2, targetMap: 'pokecenter', targetX: 4, targetY: 7, targetDir: 'up' },
+            { x: 7, y: 2, targetMap: 'pokemart', targetX: 4, targetY: 7, targetDir: 'up' },
+            { x: 4, y: 7, targetMap: 'route1', targetX: 4, targetY: 1, targetDir: 'down' },
+            { x: 5, y: 7, targetMap: 'route1', targetX: 5, targetY: 1, targetDir: 'down' }
+        ],
+        npcs: [
+            {
+                id: 'viridian_npc',
+                x: 1,
+                y: 4,
+                direction: 'right',
+                dialogue: [
+                    "CIDADAO: Bem-vindo a Viridian City!",
+                    "CIDADAO: O prédio da esquerda e o PokéCenter e o da direita e o PokéMart!"
+                ]
+            }
+        ]
+    },
+    pokecenter: {
+        grid: [
+            [4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 6, 6, 5, 5, 5, 4],
+            [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+        ],
+        warps: [
+            { x: 4, y: 7, targetMap: 'viridian', targetX: 3, targetY: 3, targetDir: 'down' },
+            { x: 5, y: 7, targetMap: 'viridian', targetX: 3, targetY: 3, targetDir: 'down' }
+        ],
+        npcs: [
+            {
+                id: 'nurse_joy',
+                x: 4,
+                y: 2,
+                direction: 'down',
+                healer: true,
+                dialogue: [
+                    "ENFERMEIRA JOY: Ola! Bem-vindo ao Centro Pokemon!",
+                    "ENFERMEIRA JOY: Seus Pokemon foram curados totalmente!"
+                ]
+            }
+        ]
+    },
+    pokemart: {
+        grid: [
+            [4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 6, 6, 5, 5, 5, 4],
+            [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+        ],
+        warps: [
+            { x: 4, y: 7, targetMap: 'viridian', targetX: 7, targetY: 3, targetDir: 'down' },
+            { x: 5, y: 7, targetMap: 'viridian', targetX: 7, targetY: 3, targetDir: 'down' }
+        ],
+        npcs: [
+            {
+                id: 'clerk',
+                x: 2,
+                y: 2,
+                direction: 'right',
+                shopkeeper: true,
+                dialogue: [
+                    "VENDEDOR: Bem-vindo ao Pokemart!",
+                    "VENDEDOR: Compre suprimentos para sua jornada!"
+                ]
+            }
         ]
     }
 };
@@ -290,6 +382,11 @@ function createTileSprite(type) {
         cx.fillStyle = COLOR.DARKEST;
         cx.fillRect(0, 0, 16, 16);
         cx.fillStyle = COLOR.LIGHTEST;
+        cx.fillRect(3, 3, 10, 13);
+    } else if (type === 'martDoor') {
+        cx.fillStyle = COLOR.DARKEST;
+        cx.fillRect(0, 0, 16, 16);
+        cx.fillStyle = COLOR.DARK;
         cx.fillRect(3, 3, 10, 13);
     } else if (type === 'indoorWall') {
         cx.fillStyle = COLOR.DARKEST;
@@ -394,7 +491,8 @@ const tileSprites = {
     4: createTileSprite('indoorWall'),
     5: createTileSprite('woodFloor'),
     6: createTileSprite('mat'),
-    7: createTileSprite('tallGrass')
+    7: createTileSprite('tallGrass'),
+    8: createTileSprite('martDoor')
 };
 
 const sprites = {
@@ -405,7 +503,7 @@ const sprites = {
     pokeball: createPokeballSprite()
 };
 
-// Jogador e Time
+// Jogador e Inventário
 const player = {
     x: 1,
     y: 1,
@@ -416,11 +514,99 @@ const player = {
     speed: 1,
     direction: 'down',
     isMoving: false,
+    money: 1000,
     pokeballs: 5,
     potions: 3,
     party: [
         { name: 'PIKACHU', hp: 20, maxHp: 20, level: 5 }
     ]
+};
+
+// Sistema de Loja (PokéMart)
+const shopSystem = {
+    active: false,
+    selectedOption: 0,
+    message: '',
+
+    open() {
+        this.active = true;
+        this.selectedOption = 0;
+        this.message = 'O que deseja comprar?';
+        soundFX.select();
+    },
+
+    close() {
+        this.active = false;
+        soundFX.select();
+    },
+
+    buyItem() {
+        if (this.selectedOption === 0) { // Pokebola $200
+            if (player.money >= 200) {
+                player.money -= 200;
+                player.pokeballs++;
+                soundFX.select();
+                this.message = 'Comptou POKEBOLA!';
+            } else {
+                soundFX.bump();
+                this.message = 'Dinheiro insuficiente!';
+            }
+        } else if (this.selectedOption === 1) { // Pocao $300
+            if (player.money >= 300) {
+                player.money -= 300;
+                player.potions++;
+                soundFX.select();
+                this.message = 'Comptou POCAO!';
+            } else {
+                soundFX.bump();
+                this.message = 'Dinheiro insuficiente!';
+            }
+        }
+    },
+
+    handleInput(key) {
+        if (key === 'ArrowUp' || key === 'w' || key === 'W') {
+            this.selectedOption = (this.selectedOption - 1 + 3) % 3;
+            soundFX.select();
+        }
+        if (key === 'ArrowDown' || key === 's' || key === 'S') {
+            this.selectedOption = (this.selectedOption + 1) % 3;
+            soundFX.select();
+        }
+
+        if (['a', 'A', 'Enter', ' '].includes(key)) {
+            if (this.selectedOption === 2) {
+                this.close();
+            } else {
+                this.buyItem();
+            }
+        }
+
+        if (['b', 'B', 'Escape'].includes(key)) {
+            this.close();
+        }
+    },
+
+    draw() {
+        if (!this.active) return;
+
+        ctx.fillStyle = COLOR.LIGHTEST;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = COLOR.DARKEST;
+        ctx.font = '8px monospace';
+        ctx.fillText("--- POKEMART ---", 30, 8);
+        ctx.fillText(`SEU DINHEIRO: $${player.money}`, 10, 24);
+
+        ctx.fillText("POKEBOLA    $200", 24, 48);
+        ctx.fillText("POCAO       $300", 24, 64);
+        ctx.fillText("SAIR", 24, 80);
+
+        const arrowY = 48 + (this.selectedOption * 16);
+        ctx.fillText(">", 12, arrowY);
+
+        ctx.fillText(this.message, 10, 116);
+    }
 };
 
 // Sistema de Menu / Pause
@@ -561,11 +747,12 @@ const menuSystem = {
             ctx.fillStyle = COLOR.DARKEST;
             ctx.font = '8px monospace';
             ctx.fillText("--- MOCHILA ---", 32, 8);
+            ctx.fillText(`DINHEIRO: $${player.money}`, 10, 20);
 
-            ctx.fillText(`POCAO    x${player.potions}`, 24, 30);
-            ctx.fillText(`POKEBOLA x${player.pokeballs}`, 24, 48);
+            ctx.fillText(`POCAO    x${player.potions}`, 24, 38);
+            ctx.fillText(`POKEBOLA x${player.pokeballs}`, 24, 56);
 
-            const arrowY = 30 + (this.bagOption * 18);
+            const arrowY = 38 + (this.bagOption * 18);
             ctx.fillText(">", 12, arrowY);
 
             ctx.fillText("[A] USAR ITEM", 10, 100);
@@ -605,6 +792,7 @@ function saveGame() {
         playerX: player.x,
         playerY: player.y,
         playerDirection: player.direction,
+        money: player.money,
         pokeballs: player.pokeballs,
         potions: player.potions,
         party: player.party
@@ -626,6 +814,7 @@ function loadGame() {
         player.targetPixelX = player.pixelX;
         player.targetPixelY = player.pixelY;
         player.direction = saveData.playerDirection || 'down';
+        player.money = saveData.money ?? 1000;
         player.pokeballs = saveData.pokeballs ?? 5;
         player.potions = saveData.potions ?? 3;
         player.party = saveData.party || [{ name: 'PIKACHU', hp: 20, maxHp: 20, level: 5 }];
@@ -634,7 +823,7 @@ function loadGame() {
     }
 }
 
-// Sistema de Batalha
+// Batalha
 const battleSystem = {
     active: false,
     state: 'intro',
@@ -703,7 +892,9 @@ const battleSystem = {
                     if (this.enemy.hp > 0) {
                         setTimeout(() => this.triggerEnemyTurn(), 1200);
                     } else {
-                        this.message = `${this.enemy.name} desmaiou!`;
+                        const rewardMoney = Math.floor(Math.random() * 50) + 50;
+                        player.money += rewardMoney;
+                        this.message = `${this.enemy.name} desmaiou! Ganhou $${rewardMoney}!`;
                     }
                 } else if (this.selectedOption === 1) {
                     if (player.potions <= 0) {
@@ -866,7 +1057,7 @@ const battleSystem = {
     }
 };
 
-// Transição de Telas / Warps
+// Transição de Telas
 const transitionManager = {
     active: false,
     alpha: 0,
@@ -945,15 +1136,23 @@ const dialogueSystem = {
         this.currentLineIndex++;
         if (this.currentLineIndex >= this.lines.length) {
             this.active = false;
+            if (this.speakerNpc && this.speakerNpc.shopkeeper) {
+                shopSystem.open();
+            }
         }
     }
 };
 
-// Controles por Teclado e Touch
+// Controles
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
     initAudio();
+
+    if (shopSystem.active) {
+        shopSystem.handleInput(e.key);
+        return;
+    }
 
     if (battleSystem.active) {
         battleSystem.handleInput(e.key);
@@ -987,6 +1186,11 @@ function bindTouchButton(elementId, keyName, isAction = false) {
     const start = (e) => {
         e.preventDefault();
         initAudio();
+
+        if (shopSystem.active) {
+            shopSystem.handleInput(keyName);
+            return;
+        }
 
         if (battleSystem.active) {
             battleSystem.handleInput(keyName);
@@ -1030,7 +1234,7 @@ bindTouchButton('btnB', 'b');
 bindTouchButton('btnStart', 'Start');
 
 function handleInteract() {
-    if (transitionManager.active || battleSystem.active || menuSystem.active) return;
+    if (transitionManager.active || battleSystem.active || menuSystem.active || shopSystem.active) return;
 
     if (dialogueSystem.active) {
         soundFX.select();
@@ -1077,6 +1281,8 @@ function isSolid(tileX, tileY) {
 }
 
 function update() {
+    if (shopSystem.active) return;
+
     if (battleSystem.active) {
         battleSystem.update();
         return;
@@ -1181,6 +1387,11 @@ function drawDialogueBox() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    if (shopSystem.active) {
+        shopSystem.draw();
+        return;
+    }
+
     if (battleSystem.active) {
         battleSystem.draw();
         return;
@@ -1216,6 +1427,6 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Inicializar Save e Game Loop
+// Inicializar
 loadGame();
 gameLoop();
