@@ -25,7 +25,7 @@ body {
     align-items: center;
     gap: 20px;
     width: 100%;
-    max-width: 360px;
+    max-width: 380px;
 }
 
 /* Renderização nítida em Pixel Art */
@@ -44,7 +44,7 @@ canvas {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    padding: 0 10px;
+    padding: 0 5px;
 }
 
 .dpad {
@@ -59,8 +59,8 @@ canvas {
 }
 
 .dpad-btn {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     background-color: #0f380f;
     color: #9bbc0f;
     border: none;
@@ -74,20 +74,43 @@ canvas {
     background-color: #306230;
 }
 
+.center-buttons {
+    display: flex;
+    gap: 8px;
+    transform: rotate(-15deg);
+    margin-top: 20px;
+}
+
+.btn-system {
+    width: 38px;
+    height: 12px;
+    background-color: #0f380f;
+    border: none;
+    border-radius: 6px;
+    color: #9bbc0f;
+    font-size: 7px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-system:active {
+    background-color: #306230;
+}
+
 .action-buttons {
     display: flex;
-    gap: 15px;
+    gap: 12px;
 }
 
 .btn-action {
-    width: 45px;
-    height: 45px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background-color: #0f380f;
     color: #9bbc0f;
     border: none;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 15px;
     cursor: pointer;
 }
 
