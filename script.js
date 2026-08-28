@@ -147,11 +147,13 @@ const soundFX = {
     }
 };
 
-// Definição dos Mapas
+// ==========================================
+// DEFINIÇÃO DOS MAPAS (COM ROTA 1)
+// ==========================================
 const maps = {
     town: {
         grid: [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
             [1, 0, 0, 0, 0, 7, 7, 7, 0, 1],
             [1, 0, 3, 3, 3, 7, 7, 7, 0, 1],
             [1, 0, 3, 2, 3, 7, 7, 7, 0, 1],
@@ -162,7 +164,9 @@ const maps = {
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         ],
         warps: [
-            { x: 3, y: 3, targetMap: 'house', targetX: 4, targetY: 7, targetDir: 'up' }
+            { x: 3, y: 3, targetMap: 'house', targetX: 4, targetY: 7, targetDir: 'up' },
+            { x: 4, y: 0, targetMap: 'route1', targetX: 4, targetY: 7, targetDir: 'up' },
+            { x: 5, y: 0, targetMap: 'route1', targetX: 5, targetY: 7, targetDir: 'up' }
         ],
         npcs: [
             {
@@ -171,10 +175,14 @@ const maps = {
                 y: 4,
                 direction: 'left',
                 dialogue: [
-                    "OAK: Pressione START para abrir o Menu!",
-                    "OAK: Use Pocoes na Mochila para curar seus Pokemon."
+                    "OAK: A Rota 1 fica ao Norte!",
+                    "OAK: A grama alta esconde Pokemon selvagens mais fortes."
                 ]
             }
+        ],
+        wildEnounters: [
+            { name: 'RATTATA', hp: 12, maxHp: 12, level: 2 },
+            { name: 'PIDGEY', hp: 12, maxHp: 12, level: 2 }
         ]
     },
     house: {
@@ -205,6 +213,41 @@ const maps = {
                     "MAE: Prontinho! Seu time esta totalmente recuperado!"
                 ]
             }
+        ]
+    },
+    route1: {
+        grid: [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 7, 7, 0, 0, 0, 0, 7, 7, 1],
+            [1, 7, 7, 0, 1, 1, 0, 7, 7, 1],
+            [1, 0, 0, 0, 1, 1, 0, 0, 0, 1],
+            [1, 7, 7, 7, 0, 0, 7, 7, 7, 1],
+            [1, 7, 7, 7, 0, 0, 7, 7, 7, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ],
+        warps: [
+            { x: 4, y: 7, targetMap: 'town', targetX: 4, targetY: 1, targetDir: 'down' },
+            { x: 5, y: 7, targetMap: 'town', targetX: 5, targetY: 1, targetDir: 'down' }
+        ],
+        npcs: [
+            {
+                id: 'traveler',
+                x: 3,
+                y: 3,
+                direction: 'right',
+                dialogue: [
+                    "VIAJANTE: A Rota 1 e perfeita para treinar!",
+                    "VIAJANTE: Dizem que ha Nidorans e Bellsprouts raros por aqui."
+                ]
+            }
+        ],
+        wildEnounters: [
+            { name: 'RATTATA', hp: 15, maxHp: 15, level: 3 },
+            { name: 'PIDGEY', hp: 16, maxHp: 16, level: 3 },
+            { name: 'NIDORAN', hp: 18, maxHp: 18, level: 4 },
+            { name: 'BELLSPROUT', hp: 17, maxHp: 17, level: 4 }
         ]
     }
 };
@@ -591,7 +634,7 @@ function loadGame() {
     }
 }
 
-// Batalha
+// Sistema de Batalha
 const battleSystem = {
     active: false,
     state: 'intro',
@@ -607,12 +650,12 @@ const battleSystem = {
         this.flashTimer = 0;
         this.selectedOption = 0;
 
-        const wildMonsters = [
-            { name: 'RATATA', hp: 15, maxHp: 15, level: 3 },
-            { name: 'PIDGEY', hp: 14, maxHp: 14, level: 3 },
-            { name: 'CATERPIE', hp: 12, maxHp: 12, level: 2 }
+        const currentMap = maps[currentMapId];
+        const encounters = currentMap.wildEnounters || [
+            { name: 'RATTATA', hp: 12, maxHp: 12, level: 2 }
         ];
-        const randomChoice = wildMonsters[Math.floor(Math.random() * wildMonsters.length)];
+
+        const randomChoice = encounters[Math.floor(Math.random() * encounters.length)];
         this.enemy = { ...randomChoice };
 
         this.message = `Um ${this.enemy.name} selvagem apareceu!`;
@@ -823,7 +866,7 @@ const battleSystem = {
     }
 };
 
-// Transição
+// Transição de Telas / Warps
 const transitionManager = {
     active: false,
     alpha: 0,
@@ -906,7 +949,7 @@ const dialogueSystem = {
     }
 };
 
-// Controles
+// Controles por Teclado e Touch
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
@@ -1006,7 +1049,7 @@ function handleInteract() {
     else if (player.direction === 'right') targetX++;
 
     const currentMap = maps[currentMapId];
-    const hitNpc = currentMap.npcs.find(npc => npc.x === targetX && npc.y === targetY);
+    const hitNpc = currentMap.npcs ? currentMap.npcs.find(npc => npc.x === targetX && npc.y === targetY) : null;
     if (hitNpc) {
         if (hitNpc.healer) {
             player.party.forEach(mon => mon.hp = mon.maxHp);
@@ -1025,8 +1068,10 @@ function isSolid(tileX, tileY) {
 
     if (tileVal === 1 || tileVal === 3 || tileVal === 4) return true;
 
-    const npcHere = currentMap.npcs.some(npc => npc.x === tileX && npc.y === tileY);
-    if (npcHere) return true;
+    if (currentMap.npcs) {
+        const npcHere = currentMap.npcs.some(npc => npc.x === tileX && npc.y === tileY);
+        if (npcHere) return true;
+    }
 
     return false;
 }
@@ -1078,14 +1123,14 @@ function update() {
 
             const currentMap = maps[currentMapId];
 
-            const warpHit = currentMap.warps.find(w => w.x === player.x && w.y === player.y);
+            const warpHit = currentMap.warps ? currentMap.warps.find(w => w.x === player.x && w.y === player.y) : null;
             if (warpHit) {
                 transitionManager.start(warpHit);
                 return;
             }
 
             if (currentMap.grid[player.y][player.x] === 7) {
-                if (Math.random() < 0.3) {
+                if (Math.random() < 0.25) {
                     battleSystem.start();
                 }
             }
@@ -1150,10 +1195,12 @@ function draw() {
         }
     }
 
-    currentMap.npcs.forEach(npc => {
-        const npcSprite = sprites.npc[npc.direction];
-        ctx.drawImage(npcSprite, npc.x * TILE_SIZE, npc.y * TILE_SIZE);
-    });
+    if (currentMap.npcs) {
+        currentMap.npcs.forEach(npc => {
+            const npcSprite = sprites.npc[npc.direction];
+            ctx.drawImage(npcSprite, npc.x * TILE_SIZE, npc.y * TILE_SIZE);
+        });
+    }
 
     const playerSprite = sprites.player[player.direction];
     ctx.drawImage(playerSprite, player.pixelX, player.pixelY);
@@ -1169,8 +1216,6 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Inicializar Save
+// Inicializar Save e Game Loop
 loadGame();
-
-// Loop Principal
 gameLoop();
