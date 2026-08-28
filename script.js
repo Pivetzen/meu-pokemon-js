@@ -13,20 +13,72 @@ const COLOR = {
     LIGHTEST: '#9bbc0f'
 };
 
-// Mapa: 0 = Grama, 1 = Parede/Árvore
-const map = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
-    [1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
-    [1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-];
+// Definição dos Mapas
+const maps = {
+    town: {
+        // 0: Grama, 1: Árvore/Parede, 2: Porta, 3: Parede de Casa
+        grid: [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 3, 3, 3, 0, 0, 1, 0, 1],
+            [1, 0, 3, 2, 3, 0, 0, 1, 0, 1], // Porta na posição (3, 3)
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ],
+        warps: [
+            { x: 3, y: 3, targetMap: 'house', targetX: 4, targetY: 7, targetDir: 'up' }
+        ],
+        npcs: [
+            {
+                id: 'prof_oak',
+                x: 7,
+                y: 4,
+                direction: 'down',
+                dialogue: [
+                    "OAK: Ola! Bem-vindo a cidade!",
+                    "OAK: Entre na casa a esquerda para ver o interior."
+                ]
+            }
+        ]
+    },
+    house: {
+        // 4: Parede Interna, 5: Piso Madeira, 6: Tapete de Saída
+        grid: [
+            [4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 5, 5, 5, 5, 5, 4],
+            [4, 5, 5, 5, 6, 6, 5, 5, 5, 4], // Tapetes de saída
+            [4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+        ],
+        warps: [
+            { x: 4, y: 7, targetMap: 'town', targetX: 3, targetY: 4, targetDir: 'down' },
+            { x: 5, y: 7, targetMap: 'town', targetX: 3, targetY: 4, targetDir: 'down' }
+        ],
+        npcs: [
+            {
+                id: 'mom',
+                x: 2,
+                y: 2,
+                direction: 'right',
+                dialogue: [
+                    "MAE: Descanse um pouco antes de sair em sua jornada!",
+                    "MAE: Cuidado com a grama alta la fora!"
+                ]
+            }
+        ]
+    }
+};
 
-// Gerador Dinâmico de Sprites em Tela (Pixel Art)
+let currentMapId = 'town';
+
+// Gerador Dinâmico de Sprites
 function createTileSprite(type) {
     const c = document.createElement('canvas');
     c.width = TILE_SIZE;
@@ -47,7 +99,36 @@ function createTileSprite(type) {
         cx.fillStyle = COLOR.LIGHT;
         cx.fillRect(4, 4, 3, 3);
         cx.fillRect(9, 4, 3, 3);
+    } else if (type === 'houseWall') {
+        cx.fillStyle = COLOR.DARKEST;
+        cx.fillRect(0, 0, 16, 16);
+        cx.fillStyle = COLOR.DARK;
+        cx.fillRect(1, 1, 14, 14);
+    } else if (type === 'door') {
+        cx.fillStyle = COLOR.DARKEST;
+        cx.fillRect(0, 0, 16, 16);
+        cx.fillStyle = COLOR.LIGHTEST;
+        cx.fillRect(3, 3, 10, 13);
+        cx.fillStyle = COLOR.DARKEST;
+        cx.fillRect(4, 8, 2, 2);
+    } else if (type === 'indoorWall') {
+        cx.fillStyle = COLOR.DARKEST;
+        cx.fillRect(0, 0, 16, 16);
+        cx.fillStyle = COLOR.DARK;
+        cx.fillRect(0, 12, 16, 4);
+    } else if (type === 'woodFloor') {
+        cx.fillStyle = COLOR.LIGHT;
+        cx.fillRect(0, 0, 16, 16);
+        cx.fillStyle = COLOR.LIGHTEST;
+        cx.fillRect(0, 0, 16, 1);
+        cx.fillRect(0, 8, 16, 1);
+    } else if (type === 'mat') {
+        cx.fillStyle = COLOR.LIGHT;
+        cx.fillRect(0, 0, 16, 16);
+        cx.fillStyle = COLOR.DARK;
+        cx.fillRect(2, 2, 12, 12);
     }
+
     return c;
 }
 
@@ -57,16 +138,13 @@ function createCharacterSprite(colorTheme, direction) {
     c.height = TILE_SIZE;
     const cx = c.getContext('2d');
 
-    // Cabeça
     cx.fillStyle = COLOR.DARKEST;
     cx.fillRect(4, 1, 8, 6);
     
-    // Detalhe do cabelo/boné (diferencia o NPC do player)
     cx.fillStyle = colorTheme;
     cx.fillRect(5, 2, 6, 2);
 
     cx.fillStyle = COLOR.DARKEST;
-    // Olhos conforme direção
     if (direction === 'down') {
         cx.fillRect(5, 4, 2, 2);
         cx.fillRect(9, 4, 2, 2);
@@ -76,7 +154,6 @@ function createCharacterSprite(colorTheme, direction) {
         cx.fillRect(9, 4, 2, 2);
     }
 
-    // Corpo e Pernas
     cx.fillRect(4, 7, 8, 5);
     cx.fillRect(4, 12, 3, 4);
     cx.fillRect(9, 12, 3, 4);
@@ -84,7 +161,6 @@ function createCharacterSprite(colorTheme, direction) {
     return c;
 }
 
-// Criar conjunto de Sprites do Personagem
 function createCharSpriteSet(colorTheme) {
     return {
         down: createCharacterSprite(colorTheme, 'down'),
@@ -94,9 +170,17 @@ function createCharSpriteSet(colorTheme) {
     };
 }
 
+const tileSprites = {
+    0: createTileSprite('grass'),
+    1: createTileSprite('wall'),
+    2: createTileSprite('door'),
+    3: createTileSprite('houseWall'),
+    4: createTileSprite('indoorWall'),
+    5: createTileSprite('woodFloor'),
+    6: createTileSprite('mat')
+};
+
 const sprites = {
-    grass: createTileSprite('grass'),
-    wall: createTileSprite('wall'),
     player: createCharSpriteSet(COLOR.LIGHTEST),
     npc: createCharSpriteSet(COLOR.DARK)
 };
@@ -114,21 +198,63 @@ const player = {
     isMoving: false
 };
 
-// Lista de NPCs no mapa
-const npcs = [
-    {
-        id: 'prof_oak',
-        x: 5,
-        y: 4,
-        direction: 'down',
-        dialogue: [
-            "OAK: Ola! Bem-vindo ao mundo dos monstros!",
-            "OAK: Pressione A para interagir com as coisas."
-        ]
-    }
-];
+// Gerenciador de Transição de Tela (Fade In / Fade Out)
+const transitionManager = {
+    active: false,
+    alpha: 0,
+    state: 'none', // 'fade_out', 'fade_in'
+    pendingWarp: null,
 
-// Gerenciador do Sistema de Diálogos
+    start(warp) {
+        this.active = true;
+        this.alpha = 0;
+        this.state = 'fade_out';
+        this.pendingWarp = warp;
+    },
+
+    update() {
+        if (!this.active) return;
+
+        if (this.state === 'fade_out') {
+            this.alpha += 0.08;
+            if (this.alpha >= 1) {
+                this.alpha = 1;
+                // Troca o mapa durante a tela totalmente preta
+                executeWarp(this.pendingWarp);
+                this.state = 'fade_in';
+            }
+        } else if (this.state === 'fade_in') {
+            this.alpha -= 0.08;
+            if (this.alpha <= 0) {
+                this.alpha = 0;
+                this.active = false;
+                this.state = 'none';
+            }
+        }
+    },
+
+    draw() {
+        if (this.alpha > 0) {
+            ctx.fillStyle = `rgba(15, 56, 15, ${this.alpha})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+};
+
+// Executa a teletransportação entre os mapas
+function executeWarp(warp) {
+    currentMapId = warp.targetMap;
+    player.x = warp.targetX;
+    player.y = warp.targetY;
+    player.pixelX = warp.targetX * TILE_SIZE;
+    player.pixelY = warp.targetY * TILE_SIZE;
+    player.targetPixelX = player.pixelX;
+    player.targetPixelY = player.pixelY;
+    player.direction = warp.targetDir;
+    player.isMoving = false;
+}
+
+// Gerenciador de Diálogos
 const dialogueSystem = {
     active: false,
     lines: [],
@@ -141,7 +267,6 @@ const dialogueSystem = {
         this.speakerNpc = npc;
         this.active = true;
 
-        // Vira o NPC para olhar na direção do Jogador
         if (this.speakerNpc) {
             if (player.x < this.speakerNpc.x) this.speakerNpc.direction = 'left';
             else if (player.x > this.speakerNpc.x) this.speakerNpc.direction = 'right';
@@ -153,16 +278,15 @@ const dialogueSystem = {
     advance() {
         this.currentLineIndex++;
         if (this.currentLineIndex >= this.lines.length) {
-            this.active = false; // Fecha a caixa de diálogo
+            this.active = false;
         }
     }
 };
 
-// Controles de Teclado
+// Controles
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
-    // Interagir com Botão A (Teclas: Enter, Espaço, 'z', 'Z', 'a', 'A')
     if (['Enter', ' ', 'z', 'Z', 'a', 'A'].includes(e.key)) {
         handleInteract();
     }
@@ -173,7 +297,6 @@ window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
 
-// Suporte para Botões Mobile / Tela
 function bindTouchButton(elementId, keyName, isAction = false) {
     const btn = document.getElementById(elementId);
     const start = (e) => {
@@ -201,18 +324,16 @@ bindTouchButton('btnLeft', 'ArrowLeft');
 bindTouchButton('btnRight', 'ArrowRight');
 bindTouchButton('btnA', 'a', true);
 
-// Ação de Interação (Botão A)
 function handleInteract() {
-    // Se a caixa de texto já estiver aberta, avança o texto
+    if (transitionManager.active) return;
+
     if (dialogueSystem.active) {
         dialogueSystem.advance();
         return;
     }
 
-    // Se o jogador estiver andando, não interage
     if (player.isMoving) return;
 
-    // Calcula o bloco exatamente à frente do jogador
     let targetX = player.x;
     let targetY = player.y;
 
@@ -221,28 +342,35 @@ function handleInteract() {
     else if (player.direction === 'left') targetX--;
     else if (player.direction === 'right') targetX++;
 
-    // Verifica se existe um NPC nessa posição
-    const hitNpc = npcs.find(npc => npc.x === targetX && npc.y === targetY);
+    const currentMap = maps[currentMapId];
+    const hitNpc = currentMap.npcs.find(npc => npc.x === targetX && npc.y === targetY);
     if (hitNpc) {
         dialogueSystem.start(hitNpc.dialogue, hitNpc);
     }
 }
 
-// Checa Colisão (Limites do mapa, paredes e NPCs)
+// Validação de Colisão
 function isSolid(tileX, tileY) {
     if (tileX < 0 || tileX >= COLS || tileY < 0 || tileY >= ROWS) return true;
-    if (map[tileY][tileX] === 1) return true;
     
-    // NPC é um obstáculo sólido
-    const npcHere = npcs.some(npc => npc.x === tileX && npc.y === tileY);
+    const currentMap = maps[currentMapId];
+    const tileVal = currentMap.grid[tileY][tileX];
+
+    // Paredes e obstáculos sólidos
+    if (tileVal === 1 || tileVal === 3 || tileVal === 4) return true;
+
+    // Colisão com NPCs
+    const npcHere = currentMap.npcs.some(npc => npc.x === tileX && npc.y === tileY);
     if (npcHere) return true;
 
     return false;
 }
 
 function update() {
-    // Se o diálogo estiver ativo, bloqueia a movimentação do jogador
-    if (dialogueSystem.active) return;
+    // Atualiza transições de tela
+    transitionManager.update();
+
+    if (dialogueSystem.active || transitionManager.active) return;
 
     if (!player.isMoving) {
         let nextX = player.x;
@@ -275,6 +403,13 @@ function update() {
 
         if (player.pixelX === player.targetPixelX && player.pixelY === player.targetPixelY) {
             player.isMoving = false;
+
+            // Verifica se o jogador pisou em um portal ao terminar de andar
+            const currentMap = maps[currentMapId];
+            const warpHit = currentMap.warps.find(w => w.x === player.x && w.y === player.y);
+            if (warpHit) {
+                transitionManager.start(warpHit);
+            }
         }
     }
 }
@@ -282,29 +417,24 @@ function update() {
 function drawDialogueBox() {
     if (!dialogueSystem.active) return;
 
-    // Dimensões e Posição da Caixa de Diálogo (Estilo GB)
     const boxX = 4;
     const boxY = 96;
     const boxWidth = 152;
     const boxHeight = 44;
 
-    // Fundo da Caixa
     ctx.fillStyle = COLOR.LIGHTEST;
     ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-    // Bordas Duplas Retro
     ctx.strokeStyle = COLOR.DARKEST;
     ctx.lineWidth = 2;
     ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
     ctx.lineWidth = 1;
     ctx.strokeRect(boxX + 2, boxY + 2, boxWidth - 4, boxHeight - 4);
 
-    // Estilo do Texto
     ctx.fillStyle = COLOR.DARKEST;
     ctx.font = '8px monospace';
     ctx.textBaseline = 'top';
 
-    // Quebra texto longo em linhas simples
     const currentText = dialogueSystem.lines[dialogueSystem.currentLineIndex];
     const words = currentText.split(' ');
     let line1 = '';
@@ -323,7 +453,6 @@ function drawDialogueBox() {
         ctx.fillText(line2.trim(), boxX + 6, boxY + 20);
     }
 
-    // Indicador de "Pressione A para Avançar" (Seta piscante)
     if (Math.floor(Date.now() / 300) % 2 === 0) {
         ctx.beginPath();
         ctx.moveTo(boxX + boxWidth - 10, boxY + boxHeight - 10);
@@ -337,16 +466,18 @@ function drawDialogueBox() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    const currentMap = maps[currentMapId];
+
     // Desenhar Mapa
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
-            const tileType = map[r][c] === 1 ? 'wall' : 'grass';
-            ctx.drawImage(sprites[tileType], c * TILE_SIZE, r * TILE_SIZE);
+            const tileType = currentMap.grid[r][c];
+            ctx.drawImage(tileSprites[tileType], c * TILE_SIZE, r * TILE_SIZE);
         }
     }
 
-    // Desenhar NPCs
-    npcs.forEach(npc => {
+    // Desenhar NPCs do Mapa Atual
+    currentMap.npcs.forEach(npc => {
         const npcSprite = sprites.npc[npc.direction];
         ctx.drawImage(npcSprite, npc.x * TILE_SIZE, npc.y * TILE_SIZE);
     });
@@ -357,6 +488,9 @@ function draw() {
 
     // Desenhar Caixa de Diálogo
     drawDialogueBox();
+
+    // Desenhar Transição
+    transitionManager.draw();
 }
 
 function gameLoop() {
